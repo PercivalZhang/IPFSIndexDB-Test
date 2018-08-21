@@ -21,9 +21,9 @@ Test code and doc use a number of open source projects to work properly:
 
 * [mocha](https://mochajs.org/) - feature-rich JavaScript test framework!
 * [chai](chaijs.com) - an assertion library
-* [node.js] - evented I/O for the backend
+* [node.js](https://nodejs.org/en/) - evented I/O for the backend
 * [apiDoc](http://apidocjs.com/) - Generates a RESTful web API Documentation
-* [Gulp] - the streaming build system
+* [Gulp](https://gulpjs.com/) - the streaming build system
 
 ### npm script set
 Dillinger is very easy to install and deploy in a Docker container.
