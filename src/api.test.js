@@ -23,6 +23,7 @@ describe('.apiRouter (files)', function () {
     after((done) => {
         done();
     });
+
     it('api.file.add > eos', function (done) {
         fs.writeFileSync(path.resolve(__dirname, '../../resource/test-file.txt'), new Date() + Math.random().toString(36).substring(8));
         const metadata = '{"name": "test.txt", "desc":"spaceX third launch", "location": "Kennedey"}';
@@ -52,7 +53,6 @@ describe('.apiRouter (files)', function () {
         const signedMsg = web3.eth.accounts.sign(metadata, ethPrivateKey);
         const formData = {
             metadata: signedMsg.message,
-            messageHash: signedMsg.messageHash,
             signature: signedMsg.signature,
             options: '{ "onlyHash": true }',
             file: readFileStream
@@ -67,21 +67,22 @@ describe('.apiRouter (files)', function () {
             done();
         });
     });
+
     it('api.data.add > eos', function (done) {
         const strSource = '{"name":"wangpengpeng","gender":"male","age":28}' + Date.now() + Math.random().toString(36).substring(7);
         const metadata = {"name": "profile.txt", "desc":"my profile", "location": "Beijing"};
 
         const bodyParams = {
-            account: 'mingqi',
-            metadata: metadata,
-            signature: ecc.sign(JSON.stringify(metadata), eosPrivateKey),
-            source: strSource,
-            options: { onlyHash: true }
+            "account": "mingqi",
+            "metadata": metadata,
+            "signature": ecc.sign(JSON.stringify(metadata), eosPrivateKey),
+            "source": strSource,
+            "options": { onlyHash: true }
         };
         request.post({
             url: 'http://localhost:3001/dbnode/data/add?chain=eos',
             json: true,
-            body: JSON.stringify(bodyParams) }, function optionalCallback(err, httpResponse, body) {
+            body: bodyParams }, function optionalCallback(err, httpResponse, body) {
             if (err) {
                 return done(err);
             }
@@ -90,22 +91,22 @@ describe('.apiRouter (files)', function () {
             done();
         });
     });
+
     it('api.data.add > ether', function (done) {
         const strSource = '{"name":"wangpengpeng","gender":"male","age":28}' + Date.now() + Math.random().toString(36).substring(7);
         const metadata = {"name": "profile.txt", "desc":"my profile", "location": "Beijing"};
         const web3 = new Web3();
         const signedMsg = web3.eth.accounts.sign(JSON.stringify(metadata), ethPrivateKey);
         const bodyParams = {
-            metadata: metadata,
-            messageHash: signedMsg.messageHash,
-            signature: signedMsg.signature,
-            source: strSource,
-            options: { onlyHash: true }
+            "metadata": metadata,
+            "signature": signedMsg.signature,
+            "source": strSource,
+            "options": { onlyHash: true }
         };
         request.post({
             url: 'http://localhost:3001/dbnode/data/add?chain=ether',
             json: true,
-            body: JSON.stringify(bodyParams) }, function optionalCallback(err, httpResponse, body) {
+            body: bodyParams }, function optionalCallback(err, httpResponse, body) {
             if (err) {
                 return done(err);
             }
@@ -114,6 +115,8 @@ describe('.apiRouter (files)', function () {
             done();
         });
     });
+
+
     it('api.file.getMine > eos', function (done) {
         const msg = '{"page":1,"pageSize":30}';
         let sig = ecc.sign(msg, eosPrivateKey);
@@ -127,55 +130,103 @@ describe('.apiRouter (files)', function () {
             if (err) {
                 return done(err);
             }
-            //console.log("response: ", JSON.stringify(body));
+            console.log("response: ", JSON.stringify(body));
             body.should.have.property('docs');
             body.should.have.property('total');
+            body.total.should.not.equal(0);
             done();
         });
     });
+
     it('api.file.getMine > ether', function (done) {
-        const msg = '{"page":1,"pageSize":30}';
-        const signedMsg = web3.eth.accounts.sign(msg, ethPrivateKey);
+        const msg = {"page":1,"pageSize":30};
+        const signedMsg = web3.eth.accounts.sign(JSON.stringify(msg), ethPrivateKey);
+        //console.log(signedMsg)
         request.get({
             url: 'http://localhost:3001/dbnode/mine?chain=ether&page=1&pageSize=2&sortBy=timestamp',
-            json:true, // tell http return json instead of string
+            json: true, // tell http return json instead of string
             headers: {
                 signature: signedMsg.signature,
-                message: signedMsg.messageHash,
+                message: JSON.stringify(msg),
             }}, function optionalCallback(err, httpResponse, body) {
             if (err) {
                 return done(err);
             }
-            //console.log("response: ", JSON.stringify(body));
+            console.log("response: ", JSON.stringify(body));
             body.should.have.property('docs');
             body.should.have.property('total');
+            body.total.should.not.equal(0);
             body.page.should.equal(1);
             body.limit.should.equal(2);
             done();
         });
     });
-    it('api.file.find', function (done) {
-        const queryBody = {
-            size: { $gte: 10},
-            timestamp: { $gte: new Date(2018, 7, 10) },
-            stringMatch: {
-                'extra.desc': 'space'
-            }
-        };
-        console.log(JSON.stringify({'name' : new RegExp('space', 'i')}));
-        request.post({
-            url: 'http://localhost:3001/dbnode/find?page=1&pageSize=20&sortBy=timestamp&order=1',
+
+    it('api.file.getMyDashboard > ether', function (done) {
+        const msg = {"page":1,"pageSize":30};
+        const signedMsg = web3.eth.accounts.sign(JSON.stringify(msg), ethPrivateKey);
+        //console.log(signedMsg);
+        request.get({
+            url: 'http://localhost:3001/dbnode/dashboard?chain=ether&page=1&pageSize=2&sortBy=timestamp',
             json: true, // tell http return json instead of string
-            body: JSON.stringify(queryBody) }, function optionalCallback(err, httpResponse, body) {
+            headers: {
+                signature: signedMsg.signature,
+                message: JSON.stringify(msg),
+            }}, function optionalCallback(err, httpResponse, body) {
             if (err) {
                 return done(err);
             }
-            //console.log("server response: ", JSON.stringify(body));
+            console.log("response: ", JSON.stringify(body));
+            expect(body).to.have.lengthOf(1);
+            body[0].should.have.property('totalSize');
+            body[0].totalSize.should.not.equal(0);
+            done();
+        });
+    });
+    it('api.file.find', function (done) {
+        const queryBody = {
+            "size": { $gte: 10},
+            "timestamp": { $gte: new Date(2018, 7, 10) },
+            "stringMatch": {
+                "extra.desc": "space"
+            }
+        };
+        request.post({
+            url: 'http://localhost:3001/dbnode/find?page=1&pageSize=2&sortBy=timestamp&order=1',
+            json: true, // tell http return json instead of string
+            body: queryBody }, function optionalCallback(err, httpResponse, body) {
+            if (err) {
+                return done(err);
+            }
+            console.log("server response: ", JSON.stringify(body));
             body.should.have.property('docs');
             body.should.have.property('total');
             body.should.have.property('page');
+            body.total.should.not.equal(0);
             body.page.should.equal(1);
-            body.limit.should.equal(20);
+            body.limit.should.equal(2);
+            done();
+        });
+    });
+    it('api.file.update > ether', function (done) {
+        const extra = {"desc":"i don't want you"};
+        const web3 = new Web3();
+        const signedMsg = web3.eth.accounts.sign(JSON.stringify(extra), ethPrivateKey);
+        //console.log(signedMsg);
+        const bodyParams = {
+            "extra": extra,
+            "signature": signedMsg.signature,
+        };
+        request.post({
+            url: 'http://localhost:3001/dbnode/QmYTS1DtGd49Brk5VsxQMow5y1PB3hWmZWhAjUxufSkvVW?chain=ether',
+            json: true,
+            body: bodyParams }, function optionalCallback(err, httpResponse, body) {
+            if (err) {
+                return done(err);
+            }
+            console.log("server response: ", JSON.stringify(body));
+            body.should.have.property('_id');
+            body.extra.desc.should.equal("i don't want you");
             done();
         });
     });
